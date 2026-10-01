@@ -58,7 +58,7 @@
 
     // El icono PWA es un asset estable y evita depender de una imagen dinámica rota del index.html.
     const oportulab = new Image();
-    oportulab.src = '/icons/icon-512.png';
+    oportulab.src = '/icons/oportulab-logo.jpeg';
     oportulab.alt = 'OportuLab';
 
     if (sponsorSlot && sponsor && !sponsorSlot.firstElementChild) {
