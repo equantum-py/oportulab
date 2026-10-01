@@ -165,7 +165,7 @@ module.exports = (req, res) => {
       .oportulab-cover-logo { width: min(80vw, 280px); }
     }
   </style>
-  <div id="oportulab-install-cover" hidden>
+  <div id="oportulab-install-cover">
     <div class="oportulab-cover-card" role="dialog" aria-modal="true" aria-label="Instalar OportuLab">
       <div class="oportulab-cover-partners">
         <div class="oportulab-cover-partner">
