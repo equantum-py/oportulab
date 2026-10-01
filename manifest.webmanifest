@@ -1,0 +1,13 @@
+{
+  "name": "OportuLab",
+  "short_name": "OportuLab",
+  "description": "Laboratorio de oportunidades — Emprendedurismo I.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
+  "lang": "es-PY",
+  "categories": ["education", "business"]
+}
