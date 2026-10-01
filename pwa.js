@@ -237,8 +237,12 @@
     setupCover();
   }
 
+  // Registrar el Service Worker inmediatamente: no esperar al evento load.
+  // OportuLab carga un HTML grande y esperar todos los recursos podía hacer que
+  // Chrome evaluara la instalación antes de que existiera un registro activo.
+  registerServiceWorker();
+
   window.addEventListener('load', () => {
     hydrateCoverImages();
-    registerServiceWorker();
   }, { once: true });
 })();
