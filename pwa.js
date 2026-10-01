@@ -3,62 +3,134 @@
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
 
-  let deferredPrompt = null;
-  let installButton = null;
+  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const hasContinuedOnWeb = () => sessionStorage.getItem('oportulab-continue-web') === '1';
 
-  const removeInstallButton = () => {
-    if (installButton) {
-      installButton.remove();
-      installButton = null;
+  let deferredPrompt = null;
+
+  const cover = document.getElementById('oportulab-install-cover');
+  const installBtn = document.getElementById('oportulab-cover-install');
+  const continueBtn = document.getElementById('oportulab-cover-continue');
+  const note = document.getElementById('oportulab-cover-note');
+  const sponsorSlot = document.getElementById('oportulab-cover-sponsor-slot');
+  const developerSlot = document.getElementById('oportulab-cover-developer-slot');
+  const logoSlot = document.getElementById('oportulab-cover-logo-slot');
+
+  const setNote = text => {
+    if (note) note.textContent = text || '';
+  };
+
+  const hideCover = () => {
+    if (cover) cover.hidden = true;
+  };
+
+  const showCover = () => {
+    if (!cover || isStandalone() || hasContinuedOnWeb()) return;
+    cover.hidden = false;
+  };
+
+  const cloneImage = (img, className, alt) => {
+    if (!img) return null;
+    const clone = img.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.removeAttribute('style');
+    clone.className = className;
+    clone.alt = alt;
+    clone.loading = 'eager';
+    clone.decoding = 'async';
+    return clone;
+  };
+
+  const hydrateCoverImages = () => {
+    const images = Array.from(document.images);
+    if (!images.length) return;
+
+    const byText = matcher => images.find(img => matcher(`${img.alt || ''} ${img.src || ''}`.toLowerCase()));
+
+    const sponsor =
+      byText(text => text.includes('vida') || text.includes('cooperativa')) ||
+      images[0] ||
+      null;
+
+    const developer =
+      byText(text => text.includes('equantum')) ||
+      images[1] ||
+      null;
+
+    const oportulab =
+      byText(text => text.includes('oportu')) ||
+      images
+        .filter(img => img !== sponsor && img !== developer)
+        .sort((a, b) => ((b.naturalWidth || b.width || 0) * (b.naturalHeight || b.height || 0)) - ((a.naturalWidth || a.width || 0) * (a.naturalHeight || a.height || 0)))[0] ||
+      null;
+
+    if (sponsorSlot && sponsor && !sponsorSlot.firstElementChild) {
+      const clone = cloneImage(sponsor, 'oportulab-cover-partner-logo', 'Cooperativa Vida y Luz Ltda.');
+      if (clone) sponsorSlot.appendChild(clone);
+    }
+
+    if (developerSlot && developer && !developerSlot.firstElementChild) {
+      const clone = cloneImage(developer, 'oportulab-cover-partner-logo', 'eQuantum Consulting Group');
+      if (clone) developerSlot.appendChild(clone);
+    }
+
+    if (logoSlot && oportulab && !logoSlot.firstElementChild) {
+      const clone = cloneImage(oportulab, 'oportulab-cover-logo', 'OportuLab');
+      if (clone) logoSlot.appendChild(clone);
     }
   };
 
-  const createInstallButton = () => {
-    if (installButton || isStandalone()) return installButton;
+  const setupCover = () => {
+    if (!cover) return;
 
-    const btn = document.createElement('button');
-    btn.id = 'oportulab-install-btn';
-    btn.type = 'button';
-    btn.textContent = 'Instalar OportuLab';
-    btn.setAttribute('aria-label', 'Instalar OportuLab como aplicación');
+    hydrateCoverImages();
+    showCover();
 
-    Object.assign(btn.style, {
-      position: 'fixed',
-      right: '18px',
-      bottom: '18px',
-      zIndex: '9999',
-      border: '0',
-      borderRadius: '999px',
-      padding: '13px 18px',
-      background: '#0b2f63',
-      color: '#ffffff',
-      fontWeight: '800',
-      fontSize: '14px',
-      lineHeight: '1',
-      boxShadow: '0 10px 28px rgba(11,47,99,.28)',
-      cursor: 'pointer'
-    });
+    if (isIOS()) {
+      if (installBtn) {
+        installBtn.disabled = false;
+        installBtn.textContent = 'Cómo instalar en iPhone';
+      }
+      setNote('En iPhone se instala desde Compartir → Agregar a pantalla de inicio.');
+    } else {
+      setNote('Preparando instalación…');
+    }
 
-    btn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
+    installBtn?.addEventListener('click', async () => {
+      if (isIOS()) {
+        setNote('Tocá Compartir y luego “Agregar a pantalla de inicio”.');
+        return;
+      }
+
+      if (!deferredPrompt) {
+        setNote('La instalación todavía no está disponible. Probá nuevamente en unos segundos.');
+        return;
+      }
 
       const promptEvent = deferredPrompt;
       deferredPrompt = null;
-      btn.disabled = true;
+      installBtn.disabled = true;
 
       try {
-        promptEvent.prompt();
-        await promptEvent.userChoice;
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        if (choice?.outcome === 'accepted') {
+          hideCover();
+        } else {
+          installBtn.disabled = false;
+          setNote('Podés instalar OportuLab cuando quieras o continuar en la web.');
+        }
       } catch (error) {
         console.error('[OportuLab PWA] No se pudo abrir el instalador:', error);
-      } finally {
-        removeInstallButton();
+        installBtn.disabled = false;
+        setNote('No se pudo abrir el instalador. También podés continuar en la web.');
       }
     });
 
-    document.body.appendChild(btn);
-    installButton = btn;
-    return btn;
+    continueBtn?.addEventListener('click', () => {
+      sessionStorage.setItem('oportulab-continue-web', '1');
+      hideCover();
+    });
   };
 
   if ('serviceWorker' in navigator) {
@@ -74,18 +146,32 @@
 
     event.preventDefault();
     deferredPrompt = event;
-    createInstallButton();
+
+    if (installBtn) {
+      installBtn.disabled = false;
+      installBtn.textContent = 'Instalar App';
+    }
+    setNote('Instalá OportuLab en tu celular para usarlo como una app.');
+    showCover();
   });
 
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
-    removeInstallButton();
+    hideCover();
   });
 
   window.matchMedia('(display-mode: standalone)').addEventListener?.('change', event => {
     if (event.matches) {
       deferredPrompt = null;
-      removeInstallButton();
+      hideCover();
     }
   });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupCover, { once: true });
+  } else {
+    setupCover();
+  }
+
+  window.addEventListener('load', hydrateCoverImages, { once: true });
 })();
