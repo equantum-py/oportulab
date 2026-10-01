@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = (req, res) => {
-  const file = path.join(process.cwd(), 'index.html');
+  const file = path.join(process.cwd(), 'app.html');
   let html = fs.readFileSync(file, 'utf8');
 
   const headTags = [];
