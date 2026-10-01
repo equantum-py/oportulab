@@ -19,8 +19,8 @@ jobs:
           fetch-depth: 0
 
       - name: Patch PWA integration safely
-        shell: python
         run: |
+          python - <<'PY'
           from pathlib import Path
 
           path = Path('index.html')
@@ -41,6 +41,7 @@ jobs:
 
           if html != original:
               path.write_text(html, encoding='utf-8')
+          PY
 
       - name: Ensure exact PWA icon dimensions
         run: |
@@ -55,8 +56,8 @@ jobs:
                   raise SystemExit(f'Falta {p}')
               with Image.open(p) as im:
                   if im.size != (size, size):
-                      im = im.convert('RGBA').resize((size, size), Image.Resampling.LANCZOS)
-                      im.save(p, 'PNG', optimize=True)
+                      fixed = im.convert('RGBA').resize((size, size), Image.Resampling.LANCZOS)
+                      fixed.save(p, 'PNG', optimize=True)
           PY
 
       - name: Commit fix
