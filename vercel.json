@@ -8,7 +8,7 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/launch.html"
+      "destination": "/api/app"
     },
     {
       "source": "/app",
