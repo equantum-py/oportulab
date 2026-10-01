@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oportulab-v2';
+const CACHE_NAME = 'oportulab-v3';
 const APP_SHELL = [
   '/manifest.webmanifest',
   '/pwa.js',
@@ -23,10 +23,11 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-
   const request = event.request;
+  if (request.method !== 'GET') return;
+
   const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
@@ -38,24 +39,24 @@ self.addEventListener('fetch', event => {
           }
           return response;
         })
-        .catch(() => caches.match(request).then(cached => cached || caches.match('/')))
+        .catch(async () => {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          return caches.match('/');
+        })
     );
     return;
   }
 
-  if (url.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(request).then(cached => {
-        const networkFetch = fetch(request).then(response => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-          }
-          return response;
-        });
-
-        return cached || networkFetch;
+  event.respondWith(
+    fetch(request)
+      .then(response => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        }
+        return response;
       })
-    );
-  }
+      .catch(() => caches.match(request))
+  );
 });
