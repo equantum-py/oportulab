@@ -4,7 +4,6 @@
     window.navigator.standalone === true;
 
   const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const hasContinuedOnWeb = () => sessionStorage.getItem('oportulab-continue-web') === '1';
 
   let deferredPrompt = null;
 
@@ -25,7 +24,7 @@
   };
 
   const showCover = () => {
-    if (!cover || isStandalone() || hasContinuedOnWeb()) return;
+    if (!cover || isStandalone()) return;
     cover.hidden = false;
   };
 
@@ -57,12 +56,10 @@
       images[1] ||
       null;
 
-    const oportulab =
-      byText(text => text.includes('oportu')) ||
-      images
-        .filter(img => img !== sponsor && img !== developer)
-        .sort((a, b) => ((b.naturalWidth || b.width || 0) * (b.naturalHeight || b.height || 0)) - ((a.naturalWidth || a.width || 0) * (a.naturalHeight || a.height || 0)))[0] ||
-      null;
+    // El icono PWA es un asset estable y evita depender de una imagen dinámica rota del index.html.
+    const oportulab = new Image();
+    oportulab.src = '/icons/icon-512.png';
+    oportulab.alt = 'OportuLab';
 
     if (sponsorSlot && sponsor && !sponsorSlot.firstElementChild) {
       const clone = cloneImage(sponsor, 'oportulab-cover-partner-logo', 'Cooperativa Vida y Luz Ltda.');
@@ -128,7 +125,6 @@
     });
 
     continueBtn?.addEventListener('click', () => {
-      sessionStorage.setItem('oportulab-continue-web', '1');
       hideCover();
     });
   };
