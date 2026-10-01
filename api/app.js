@@ -172,7 +172,7 @@ module.exports = (req, res) => {
       .oportulab-cover-logo { width: min(80vw, 280px); }
     }
   </style>
-  <div id="oportulab-install-cover" hidden>
+  <div id="oportulab-install-cover">
     <div class="oportulab-cover-card" role="dialog" aria-modal="true" aria-label="Instalar OportuLab">
       <div class="oportulab-cover-partners">
         <div class="oportulab-cover-partner">
@@ -203,10 +203,6 @@ module.exports = (req, res) => {
   if (!/src=["']\/pwa\.js["']/i.test(html)) {
     html = html.replace(/<\/body>/i, '  <script src="/pwa.js" defer></script>\n</body>');
   }
-
-  // El servidor entrega la portada visible en navegación web normal.
-  // Solo standalone debe omitirla; CSS + pwa.js se encargan de ese caso.
-  html = html.replace('id="oportulab-install-cover" hidden', 'id="oportulab-install-cover"');
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
