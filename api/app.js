@@ -13,6 +13,9 @@ module.exports = (req, res) => {
   if (!/name=["']theme-color["']/i.test(html)) {
     headTags.push('<meta name="theme-color" content="#0b2f63">');
   }
+  if (!/name=["']viewport["']/i.test(html)) {
+    headTags.push('<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">');
+  }
   if (!/name=["']mobile-web-app-capable["']/i.test(html)) {
     headTags.push('<meta name="mobile-web-app-capable" content="yes">');
   }
@@ -27,6 +30,18 @@ module.exports = (req, res) => {
   }
   if (!/rel=["']apple-touch-icon["']/i.test(html)) {
     headTags.push('<link rel="apple-touch-icon" href="/icons/icon-192.png">');
+  }
+  if (!/id=["']oportulab-install-bootstrap["']/i.test(html)) {
+    headTags.push(`<script id="oportulab-install-bootstrap">
+(function () {
+  window.__oportulabDeferredPrompt = window.__oportulabDeferredPrompt || null;
+  window.addEventListener('beforeinstallprompt', function (event) {
+    event.preventDefault();
+    window.__oportulabDeferredPrompt = event;
+    window.dispatchEvent(new Event('oportulab:installprompt'));
+  });
+})();
+</script>`);
   }
 
   if (headTags.length) {
@@ -47,6 +62,7 @@ module.exports = (req, res) => {
       background: #f7f9fc;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #0b2f63;
+      overscroll-behavior: contain;
     }
     #oportulab-install-cover[hidden] { display: none !important; }
     .oportulab-cover-card {
@@ -101,20 +117,6 @@ module.exports = (req, res) => {
       object-fit: contain;
       margin-bottom: 14px;
     }
-    .oportulab-cover-title {
-      margin: 0 0 8px;
-      font-size: clamp(20px, 5vw, 28px);
-      line-height: 1.15;
-      font-weight: 900;
-      color: #0b2f63;
-    }
-    .oportulab-cover-copy {
-      max-width: 320px;
-      margin: 0;
-      font-size: 14px;
-      line-height: 1.55;
-      color: #667894;
-    }
     .oportulab-cover-actions {
       display: grid;
       gap: 10px;
@@ -130,6 +132,7 @@ module.exports = (req, res) => {
       font-weight: 800;
       cursor: pointer;
       box-shadow: 0 10px 24px rgba(11, 47, 99, .18);
+      touch-action: manipulation;
     }
     #oportulab-cover-install:disabled {
       opacity: .55;
@@ -144,6 +147,7 @@ module.exports = (req, res) => {
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
+      touch-action: manipulation;
     }
     #oportulab-cover-note {
       min-height: 20px;
@@ -152,6 +156,9 @@ module.exports = (req, res) => {
       font-size: 12px;
       line-height: 1.45;
       color: #7b8799;
+    }
+    @media (display-mode: standalone) {
+      #oportulab-install-cover { display: none !important; }
     }
     @media (max-width: 520px) {
       #oportulab-install-cover { padding-left: 14px; padding-right: 14px; }
@@ -181,9 +188,9 @@ module.exports = (req, res) => {
         <div id="oportulab-cover-logo-slot"></div>
       </div>
       <div class="oportulab-cover-actions">
-        <button id="oportulab-cover-install" type="button" disabled>Instalar App</button>
+        <button id="oportulab-cover-install" type="button">Instalar App</button>
         <button id="oportulab-cover-continue" type="button">Continuar en la web</button>
-        <p id="oportulab-cover-note">Preparando instalación…</p>
+        <p id="oportulab-cover-note" aria-live="polite">Preparando instalación…</p>
       </div>
     </div>
   </div>

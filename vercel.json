@@ -5,10 +5,10 @@
       "includeFiles": "index.html"
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "^/$",
-      "dest": "/api/app"
+      "source": "/",
+      "destination": "/api/app"
     }
   ],
   "headers": [
@@ -44,6 +44,24 @@
         {
           "key": "Cache-Control",
           "value": "no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/icons/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/oportulab_siguientes_pasos_v3.mp4",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
         }
       ]
     }

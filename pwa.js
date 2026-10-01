@@ -4,8 +4,10 @@
     window.navigator.standalone === true;
 
   const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isChromium = () => /chrome|crios|edg|edga|edgios/i.test(navigator.userAgent);
 
-  let deferredPrompt = null;
+  let deferredPrompt = window.__oportulabDeferredPrompt || null;
+  let refreshing = false;
 
   const cover = document.getElementById('oportulab-install-cover');
   const installBtn = document.getElementById('oportulab-cover-install');
@@ -28,6 +30,25 @@
     cover.hidden = false;
   };
 
+  const enableInstall = () => {
+    if (!installBtn || isStandalone()) return;
+    installBtn.disabled = false;
+    installBtn.textContent = isIOS() ? 'Cómo instalar en iPhone' : 'Instalar App';
+  };
+
+  const captureInstallPrompt = event => {
+    if (isStandalone()) return;
+    if (event?.preventDefault) event.preventDefault();
+
+    deferredPrompt = event || window.__oportulabDeferredPrompt || null;
+    if (deferredPrompt) {
+      window.__oportulabDeferredPrompt = deferredPrompt;
+      enableInstall();
+      setNote('Instalá OportuLab en tu dispositivo para usarlo como una app.');
+      showCover();
+    }
+  };
+
   const cloneImage = (img, className, alt) => {
     if (!img) return null;
     const clone = img.cloneNode(true);
@@ -44,7 +65,8 @@
     const images = Array.from(document.images);
     if (!images.length) return;
 
-    const byText = matcher => images.find(img => matcher(`${img.alt || ''} ${img.src || ''}`.toLowerCase()));
+    const byText = matcher =>
+      images.find(img => matcher(`${img.alt || ''} ${img.src || ''}`.toLowerCase()));
 
     const sponsor =
       byText(text => text.includes('vida') || text.includes('cooperativa')) ||
@@ -56,7 +78,6 @@
       images[1] ||
       null;
 
-    // El icono PWA es un asset estable y evita depender de una imagen dinámica rota del index.html.
     const oportulab = new Image();
     oportulab.src = '/icons/oportulab-logo.jpeg';
     oportulab.alt = 'OportuLab';
@@ -71,7 +92,7 @@
       if (clone) developerSlot.appendChild(clone);
     }
 
-    if (logoSlot && oportulab && !logoSlot.firstElementChild) {
+    if (logoSlot && !logoSlot.firstElementChild) {
       const clone = cloneImage(oportulab, 'oportulab-cover-logo', 'OportuLab');
       if (clone) logoSlot.appendChild(clone);
     }
@@ -80,85 +101,128 @@
   const setupCover = () => {
     if (!cover) return;
 
+    if (isStandalone()) {
+      hideCover();
+      return;
+    }
+
     hydrateCoverImages();
     showCover();
+    enableInstall();
 
     if (isIOS()) {
-      if (installBtn) {
-        installBtn.disabled = false;
-        installBtn.textContent = 'Cómo instalar en iPhone';
-      }
-      setNote('En iPhone se instala desde Compartir → Agregar a pantalla de inicio.');
+      setNote('En iPhone o iPad: Compartir → Agregar a pantalla de inicio.');
+    } else if (deferredPrompt) {
+      setNote('Instalá OportuLab en tu dispositivo para usarlo como una app.');
     } else {
-      setNote('Preparando instalación…');
+      setNote('Si el instalador no aparece, usá el menú del navegador → Instalar aplicación.');
     }
 
     installBtn?.addEventListener('click', async () => {
-      if (isIOS()) {
-        setNote('Tocá Compartir y luego “Agregar a pantalla de inicio”.');
+      if (isStandalone()) {
+        hideCover();
         return;
       }
 
+      if (isIOS()) {
+        setNote('En Safari: tocá Compartir → Agregar a pantalla de inicio.');
+        return;
+      }
+
+      deferredPrompt = deferredPrompt || window.__oportulabDeferredPrompt || null;
+
       if (!deferredPrompt) {
-        setNote('La instalación todavía no está disponible. Probá nuevamente en unos segundos.');
+        setNote(
+          isChromium()
+            ? 'Abrí el menú de Chrome/Edge y elegí “Instalar OportuLab” o “Instalar aplicación”.'
+            : 'Usá el menú del navegador para instalar OportuLab o agregarla a la pantalla de inicio.'
+        );
         return;
       }
 
       const promptEvent = deferredPrompt;
       deferredPrompt = null;
+      window.__oportulabDeferredPrompt = null;
       installBtn.disabled = true;
 
       try {
         await promptEvent.prompt();
         const choice = await promptEvent.userChoice;
+
         if (choice?.outcome === 'accepted') {
           hideCover();
         } else {
-          installBtn.disabled = false;
+          enableInstall();
           setNote('Podés instalar OportuLab cuando quieras o continuar en la web.');
         }
       } catch (error) {
         console.error('[OportuLab PWA] No se pudo abrir el instalador:', error);
-        installBtn.disabled = false;
-        setNote('No se pudo abrir el instalador. También podés continuar en la web.');
+        enableInstall();
+        setNote('No se pudo abrir el instalador. Probá desde el menú del navegador.');
       }
     });
 
-    continueBtn?.addEventListener('click', () => {
-      hideCover();
-    });
+    continueBtn?.addEventListener('click', hideCover);
   };
 
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker
-        .register('/sw.js', { scope: '/' })
-        .catch(error => console.error('[OportuLab PWA] Error registrando Service Worker:', error));
-    });
-  }
+  const registerServiceWorker = async () => {
+    if (!('serviceWorker' in navigator)) return;
 
-  window.addEventListener('beforeinstallprompt', event => {
-    if (isStandalone()) return;
+    try {
+      const hadController = Boolean(navigator.serviceWorker.controller);
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+        updateViaCache: 'none'
+      });
 
-    event.preventDefault();
-    deferredPrompt = event;
+      registration.update().catch(() => {});
 
-    if (installBtn) {
-      installBtn.disabled = false;
-      installBtn.textContent = 'Instalar App';
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+
+      registration.addEventListener('updatefound', () => {
+        const installing = registration.installing;
+        if (!installing) return;
+
+        installing.addEventListener('statechange', () => {
+          if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+            installing.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController || refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          registration.update().catch(() => {});
+        }
+      });
+    } catch (error) {
+      console.error('[OportuLab PWA] Error registrando Service Worker:', error);
     }
-    setNote('Instalá OportuLab en tu celular para usarlo como una app.');
-    showCover();
+  };
+
+  window.addEventListener('beforeinstallprompt', captureInstallPrompt);
+  window.addEventListener('oportulab:installprompt', () => {
+    captureInstallPrompt(window.__oportulabDeferredPrompt);
   });
 
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
+    window.__oportulabDeferredPrompt = null;
     hideCover();
   });
 
   window.matchMedia('(display-mode: standalone)').addEventListener?.('change', event => {
     if (event.matches) {
       deferredPrompt = null;
+      window.__oportulabDeferredPrompt = null;
       hideCover();
     }
   });
@@ -169,5 +233,8 @@
     setupCover();
   }
 
-  window.addEventListener('load', hydrateCoverImages, { once: true });
+  window.addEventListener('load', () => {
+    hydrateCoverImages();
+    registerServiceWorker();
+  }, { once: true });
 })();
