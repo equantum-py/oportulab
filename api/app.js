@@ -200,9 +200,6 @@ module.exports = (req, res) => {
     html = html.replace(/<body([^>]*)>/i, `<body$1>${installCover}`);
   }
 
-  if (!/src=["']\/pwa\.js["']/i.test(html)) {
-    html = html.replace(/<\/body>/i, '  <script src="/pwa.js" defer></script>\n</body>');
-  }
 
   // Compatibilidad para botones “Atrás” generados por la aplicación.
   // Si el control no tiene acción propia, vuelve a la pantalla anterior real.
