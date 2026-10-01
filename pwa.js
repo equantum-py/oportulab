@@ -115,11 +115,13 @@
       enableInstall();
       setNote('OportuLab está lista para instalarse como aplicación.');
     } else {
+      // Mantener la experiencia tipo app aunque Chrome todavía no habilite
+      // la instalación nativa. El usuario siempre puede entrar a OportuLab.
       if (installBtn) {
-        installBtn.disabled = true;
-        installBtn.textContent = 'Preparando instalación…';
+        installBtn.disabled = false;
+        installBtn.textContent = 'Instalar App';
       }
-      setNote('Chrome habilitará la instalación cuando termine de verificar la aplicación.');
+      setNote('También podés continuar y usar OportuLab directamente desde la web.');
     }
 
     installBtn?.addEventListener('click', async () => {
@@ -138,8 +140,8 @@
       if (!deferredPrompt) {
         setNote(
           isChromium()
-            ? 'Abrí el menú de Chrome/Edge y elegí “Instalar OportuLab” o “Instalar aplicación”.'
-            : 'Usá el menú del navegador para instalar OportuLab o agregarla a la pantalla de inicio.'
+            ? 'En Chrome, abrí el menú ⋮ y elegí “Instalar app” o “Crear acceso directo”.'
+            : 'Usá el menú del navegador para agregar OportuLab a tu pantalla de inicio.'
         );
         return;
       }
