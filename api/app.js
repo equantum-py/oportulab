@@ -179,8 +179,6 @@ module.exports = (req, res) => {
       </div>
       <div class="oportulab-cover-main">
         <div id="oportulab-cover-logo-slot"></div>
-        <h1 class="oportulab-cover-title">OportuLab</h1>
-        <p class="oportulab-cover-copy">Convierte problemas en oportunidades de negocio</p>
       </div>
       <div class="oportulab-cover-actions">
         <button id="oportulab-cover-install" type="button" disabled>Instalar App</button>
