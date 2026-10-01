@@ -204,6 +204,31 @@ module.exports = (req, res) => {
     html = html.replace(/<\/body>/i, '  <script src="/pwa.js" defer></script>\n</body>');
   }
 
+  // Compatibilidad para botones “Atrás” generados por la aplicación.
+  // Si el control no tiene acción propia, vuelve a la pantalla anterior real.
+  if (!/id=["']oportulab-back-fix["']/i.test(html)) {
+    html = html.replace(/<\/body>/i, `  <script id="oportulab-back-fix">
+document.addEventListener('click', function (event) {
+  const target = event.target.closest('button, a, [role="button"]');
+  if (!target) return;
+  const label = (target.textContent || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+  if (label !== 'atrás' && label !== '← atrás' && label !== '←atrás') return;
+
+  const href = target.getAttribute('href');
+  const hasInlineAction = target.hasAttribute('onclick');
+  if (href && href !== '#' && !href.toLowerCase().startsWith('javascript:')) return;
+  if (hasInlineAction) return;
+
+  event.preventDefault();
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    window.location.href = '/app';
+  }
+}, true);
+</script>\n</body>`);
+  }
+
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
