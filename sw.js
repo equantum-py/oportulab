@@ -1,5 +1,6 @@
-const CACHE_NAME = 'oportulab-v3';
+const CACHE_NAME = 'oportulab-v4';
 const APP_SHELL = [
+  '/',
   '/manifest.webmanifest',
   '/pwa.js',
   '/icons/icon-192.png',
