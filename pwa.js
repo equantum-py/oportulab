@@ -108,14 +108,18 @@
 
     hydrateCoverImages();
     showCover();
-    enableInstall();
-
     if (isIOS()) {
+      enableInstall();
       setNote('En iPhone o iPad: Compartir → Agregar a pantalla de inicio.');
     } else if (deferredPrompt) {
-      setNote('Instalá OportuLab en tu dispositivo para usarlo como una app.');
+      enableInstall();
+      setNote('OportuLab está lista para instalarse como aplicación.');
     } else {
-      setNote('Si el instalador no aparece, usá el menú del navegador → Instalar aplicación.');
+      if (installBtn) {
+        installBtn.disabled = true;
+        installBtn.textContent = 'Preparando instalación…';
+      }
+      setNote('Chrome habilitará la instalación cuando termine de verificar la aplicación.');
     }
 
     installBtn?.addEventListener('click', async () => {
