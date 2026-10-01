@@ -1,0 +1,21 @@
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Archivos locales
+.env
+.env.*
+
+# Dependencias / builds
+node_modules/
+dist/
+build/
+.next/
+
+# Archivos temporales
+*.log
+*.tmp
